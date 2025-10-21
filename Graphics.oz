@@ -5,17 +5,13 @@ import
     % System
     Application
     QTk at 'x-oz://system/wp/QTk.ozf'
-    State
-    System
 export
     'spawn': SpawnGraphics
 define
     CD = {OS.getCWD}
     FONT = {QTk.newFont font('size': 18)}
-    
     WALL_TILE = {QTk.newImage photo(file: CD # '/ress/wall.png')}
     GROUND_TILE = {QTk.newImage photo(file: CD # '/ress/ground.png')}
-
     PACMOZ_SPRITE = {QTk.newImage photo(file: CD # '/ress/pacmoz.png')}
     PACGUM_SPRITE = {QTk.newImage photo(file: CD # '/ress/pacgum.png')}
     PACPOW_SPRITE = {QTk.newImage photo(file: CD # '/ress/pacpow.png')}
@@ -29,98 +25,75 @@ define
     SCARED_DOWN_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_down.png')}
     SCARED_RIGHT_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_right.png')}
     SCARED_LEFT_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_left.png')}
+    
+    class GameObject
+        attr 'id' 'type' 'sprite' 'x' 'y'
 
-
-    %HEAD
-    SNAKE_HEAD_N = {QTk.newImage photo(file: CD # '/ress/head_north.png')}
-    SNAKE_HEAD_E = {QTk.newImage photo(file: CD # '/ress/head_east.png')}
-    SNAKE_HEAD_S = {QTk.newImage photo(file: CD # '/ress/head_south.png')}
-    SNAKE_HEAD_W = {QTk.newImage photo(file: CD # '/ress/head_west.png')}
-
-    %TAIL
-    SNAKE_TAIL_N = {QTk.newImage photo(file: CD # '/ress/tail_north.png')}
-    SNAKE_TAIL_E = {QTk.newImage photo(file: CD # '/ress/tail_east.png')}
-    SNAKE_TAIL_S = {QTk.newImage photo(file: CD # '/ress/tail_south.png')}
-    SNAKE_TAIL_W = {QTk.newImage photo(file: CD # '/ress/tail_west.png')}
-
-
-    SNAKE_BODY = {QTk.newImage photo(file: CD # '/ress/body.png')}
-    FRUIT = {QTk.newImage photo(file: CD # '/ress/fruit.png')}
-
-    fun {Get_Head Dir}
-        case Dir of 'EAST' then SNAKE_HEAD_E
-        [] 'WEST' then SNAKE_HEAD_W
-        [] 'SOUTH' then SNAKE_HEAD_S
-        [] 'NORTH' then SNAKE_HEAD_N
-        end
-    end
-
-    fun {Get_Tail Dir}
-        case Dir of 'EAST' then SNAKE_TAIL_E
-        [] 'WEST' then SNAKE_TAIL_W
-        [] 'SOUTH' then SNAKE_TAIL_S
-        [] 'NORTH' then SNAKE_TAIL_N
-        end
-    end
-
-    class Snake
-
-        meth init(Id Head_Loc Head_dir Tail_loc Tail_dir)
-
-            'x_head' := Head_Loc.1
-            'y_head' := Head_Loc.2
-            'head_dir' := Head_dir
-
-            'x_tail' := Tail_loc.1
-            'y_tail' := Tail_loc.2
-            'tail_dir' := Tail_dir
-
-            'type' := 'snake'
+        meth init(Id Type Sprite X Y)
             'id' := Id
-            'sprite' := GROUND_TILE
-
-            {self setDirection()}
-        end
-
-        meth setDirection()
-                if @head_dir == 'NORTH' then
-                    'sprite' := SNAKE_HEAD_N
-                elseif @head_dir == 'SOUTH' then
-                    'sprite' := SNAKE_HEAD_S
-                elseif @head_dir == 'EAST' then
-                    'sprite' := SNAKE_HEAD_E
-                elseif @head_dir == 'WEST' then
-                    'sprite' := SNAKE_HEAD_W
-                end
-        end
-
-        meth setDir(Dir)
-            'head_dir' := Dir
-            {self setDirection()}
+            'type' := Type
+            'sprite' := Sprite
+            'x' := X
+            'y' := Y
         end
 
         meth getType($) @type end
 
         meth render(Buffer)
-            {Buffer copy(@sprite 'to': o(@x_head @y_head))}
+            {Buffer copy(@sprite 'to': o(@x @y))}
+        end
+
+        meth update(GCPort) skip end
+    end
+
+    class Bot from GameObject
+        attr 'isMoving' 'moveDir' 'targetX' 'targetY'
+
+        meth init(Id Type Sprite X Y)
+            GameObject, init(Id Type Sprite X Y)
+            'isMoving' := false
+            'targetX' := X
+            'targetY' := Y
+        end
+
+        meth setTarget(Dir)
+            'isMoving' := true
+            'moveDir' := Dir
+            if Dir == 'north' then
+                'targetY' := @y - 32
+            elseif Dir == 'south' then
+                'targetY' := @y + 32
+            elseif Dir == 'east' then
+                'targetX' := @x + 32
+            elseif Dir == 'west' then
+                'targetX' := @x - 32
+            end
         end
 
         meth move(GCPort)
-            if @head_dir == 'NORTH' then
-                'y_head' := @y_head - 32
-            elseif @head_dir == 'SOUTH' then
-                'y_head' := @y_head + 32
-            elseif @head_dir == 'EAST' then
-                'x_head' := @x_head + 32
-            elseif @head_dir == 'WEST' then
-                'x_head' := @x_head - 32
+            if @moveDir == 'north' then
+                'y' := @y - 4
+            elseif @moveDir == 'south' then
+                'y' := @y + 4
+            elseif @moveDir == 'east' then
+                'x' := @x + 4
+            elseif @moveDir == 'west' then
+                'x' := @x - 4
             end
 
-            {Send GCPort movedTo(@id @type @x_head @y_head)}
+            if @x == @targetX andthen @y == @targetY then
+                NewX = @x div 32
+                NewY = @y div 32
+            in
+                'isMoving' := false
+                {Send GCPort movedTo(@id @type NewX NewY)}
+            end
         end
 
         meth update(GCPort)
-            {self move(GCPort)}
+            if @isMoving then
+                {self move(GCPort)}
+            end
         end
     end
 
@@ -134,8 +107,8 @@ define
             'gcPort'
         
         meth init(GCPort)
-            Height = 512
-            Width = 512
+            Height = 20*32
+            Width = 20*32
         in
             'running' := true
             'gcPort' := GCPort
@@ -148,17 +121,17 @@ define
                     'handle': @canvas
                     'width': Width
                     'height': Height
-                    'background': 'white'
+                    'background': 'black'
                 )
                 button(
-                    'text': "Close"
+                    'text': "close"
                     'action' : proc {$} {Application.exit 0} end
                 )
             )}
 
             'score' := 0
             {@canvas create('image' Width div 2 Height div 2 'image': @buffer)}
-            % {@canvas create('text' 128 16 'text': 'score: 0' 'fill': 'white' 'font': FONT 'handle': @scoreHandle)}
+            {@canvas create('text' 128 16 'text': 'score: 0' 'fill': 'white' 'font': FONT 'handle': @scoreHandle)}
             'background' := {QTk.newImage photo('width': Width 'height': Height)}
             {@window 'show'}
 
@@ -173,92 +146,38 @@ define
             @ids
         end
 
-        meth spawnPacgum(X Y)
-            {@background copy(PACGUM_SPRITE 'to': o(X * 32 Y * 32))}
-            {Send @gcPort pacgumSpawned(X Y)}
-        end
-
-        meth dispawnPacgum(X Y)
-            {@background copy(GROUND_TILE 'to': o(X * 32 Y * 32))}
-            {Send @gcPort pacgumDispawned(X Y)}
-        end
-
-        meth spawnPacpow(X Y)
-            {@background copy(PACPOW_SPRITE 'to': o(X * 32 Y * 32))}
-            {Send @gcPort pacpowSpawned(X Y)}
-        end
-
-        meth dispawnPacpow(X Y)
-            {self setAllScared(true)}
-            thread
-                {Delay 3000}
-                {Send @gcPort pacpowDown()}
-                {Delay 7000}
-                {self spawnPacpow(X Y)}
-            end
-            {@background copy(GROUND_TILE 'to': o(X * 32 Y * 32))}
-            {Send @gcPort pacpowDispawned(X Y)}
-        end
-
         meth buildMaze(Maze)
-            STATE = {State.init}
-            X_head = STATE.head_loc.1
-            Y_head = STATE.head_loc.2.1
-
-            X_tail = STATE.tail_loc.1
-            Y_tail = STATE.tail_loc.2.1
-
-            X_fruit = STATE.fruit_loc.1
-            Y_fruit = STATE.fruit_loc.2.1
-
-            Head_dir = STATE.head_dir
-            Tail_dir = STATE.tail_dir
-
             Z = {NewCell 0}
         in
             for K in Maze do
-                X = @Z mod 16
-                Y = @Z div 16
+                X = @Z mod 20
+                Y = @Z div 20
             in
                 if K == 0 then
+                    {@background copy(GROUND_TILE 'to': o(X * 32 Y * 32))}
+                elseif K == 1 then
+                    {@background copy(WALL_TILE 'to': o(X * 32 Y * 32))}
+                elseif K == 2 then
                     {@background copy(GROUND_TILE 'to': o(X * 32 Y * 32))}
                 end
                 Z := @Z + 1
             end
-            {@background copy({Get_Head Head_dir} 'to': o(X_head * 32 Y_head * 32))}
-            {@background copy({Get_Tail Tail_dir} 'to': o(X_tail * 32 Y_tail * 32))}
-            {@background copy(FRUIT 'to': o(X_fruit * 32 Y_fruit * 32))}
-        end
-
-        meth spawnSnake(Type Head_loc Head_dir Tail_loc Tail_dir $)
-            Bot
-            Id = {self genId($)}
-
-            X_head = Head_loc.1 * 32
-            Y_head = Head_loc.2 * 32
-
-            X_tail = Tail_loc.1 * 32
-            Y_tail = Tail_loc.2 * 32
-        in
-
-            Bot = {New Snake init(Id [X_head Y_head] Head_dir [X_tail Y_tail] Tail_dir)}
-
-            {Dictionary.put @gameObjects Id Bot}
-            {Send @gcPort movedTo(Id Type X_head Y_head)}
-            Id
         end
 
         meth spawnBot(Type X Y $)
-            % Wrapper method for backward compatibility
-            % Creates a snake at position (X, Y) with default direction EAST
-            Head_loc = [X Y]
-            Tail_loc = [X - 1 Y]
-            Dir = 'EAST'
+            Bot
+            Id = {self genId($)}
         in
-            {self spawnSnake(Type Head_loc Dir Tail_loc Dir $)}
+            if Type == 'snake' then
+                skip
+            end
+
+            {Dictionary.put @gameObjects Id Bot}
+            {Send @gcPort movedTo(Id Type X Y)}
+            Id
         end
 
-        meth dispawnSnake(Id)
+        meth dispawnBot(Id)
             {Dictionary.remove @gameObjects Id}
         end
 
@@ -266,13 +185,8 @@ define
             Bot = {Dictionary.condGet @gameObjects Id 'null'}
         in
             if Bot \= 'null' then
-                {Bot setDir(Dir)}
+                {Bot setTarget(Dir)}
             end
-        end
-
-        meth setAllScared(Scared)
-            % Stub method - not used in snake game
-            skip
         end
 
         meth updateScore(Score)

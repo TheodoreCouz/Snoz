@@ -13,12 +13,12 @@ else
 	OZENGINE = ozengine
 endif
 # TODO: Change these parameters as you wish
+
 all: compile run
-compile:
+compile: 
 	$(OZC) -c Input.oz -o "Input.ozf"
 	$(OZC) -c AgentManager.oz
 	$(OZC) -c Graphics.oz
-	$(OZC) -c State.oz
 	$(OZC) -c Main.oz
 run:
 	$(OZENGINE) Main.ozf

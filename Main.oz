@@ -6,7 +6,6 @@ import
     Graphics
     AgentManager
     Application
-    OS
 define
      % Check the Adjoin and AdjoinAt function, documentation: (http://mozart2.org/mozart-v1/doc-1.4.0/base/record.html#section.records.records)
 
@@ -20,7 +19,6 @@ define
     fun {GameController State}
         fun {MoveTo moveTo(Id Dir)}
             {State.gui moveBot(Id Dir)}
-            
             {GameController State}
         end
         % function to handle the PacGumSpawned message
@@ -71,14 +69,6 @@ define
 
     % TODO: Spawn the agents
     proc {StartGame}
-
-        Directions = directions(
-            1: 'WEST'
-            2: 'EAST'
-            3: 'NORTH'
-            4: 'SOUTH'
-        )
-
         Stream
         Port = {NewPort Stream}
         GUI = {Graphics.spawn Port 30}
@@ -86,52 +76,15 @@ define
         Maze = {Input.genMaze}
         {GUI buildMaze(Maze)}
 
-        X_head = {OS.rand} mod 15
-        Y_head = {OS.rand} mod 15
-
-        Head_dir = Directions.({OS.rand} mod 4 + 1) % randon starting direction
-
-        X_tail
-        Y_tail
-
-        X_fruit = {OS.rand} mod 15
-        Y_fruit = {OS.rand} mod 15
-
-        Snake1_id = {GUI spawnBot('snake' 5 7)}
-
         Instance = {GameController state(
             'gui': GUI
             'maze': Maze
             'score': 0
         )}
     in
-
-        case Head_dir of 'EAST' then 
-            if X_head == 0 then X_head = 1 end
-            X_tail = X_head - 1
-            Y_tail = Y_head
-        [] 'WEST' then
-            if X_head == 15 then X_head = 14 end
-            X_tail = X_head + 1
-            Y_tail = Y_head 
-        [] 'SOUTH' then
-            if Y_head == 0 then Y_head = 1 end
-            X_tail = X_head
-            Y_tail = Y_head - 1
-        [] 'NORTH' then
-            if Y_head == 15 then Y_head = 14 end
-            X_tail = X_head
-            Y_tail = Y_head + 1
-        end
-
         % TODO: log the winning team name and the score then use {Application.exit 0}
         {Handler Stream Instance}
     end
 
     {StartGame}
 end
-
-
-
-    in
-
