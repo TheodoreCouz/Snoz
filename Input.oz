@@ -5,8 +5,6 @@ export
     'bots': Bots
 define
     Bots = [
-        bot('pacmoz' 'pacmOz000Basic' 1 1)
-        bot('ghozt' 'ghOzt000Basic' 26 27)
         bot('snake' 'snakeBot' 3 3)
     ]
 
