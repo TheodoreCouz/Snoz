@@ -12,19 +12,9 @@ define
     FONT = {QTk.newFont font('size': 18)}
     WALL_TILE = {QTk.newImage photo(file: CD # '/ress/wall.png')}
     GROUND_TILE = {QTk.newImage photo(file: CD # '/ress/ground.png')}
-    PACMOZ_SPRITE = {QTk.newImage photo(file: CD # '/ress/pacmoz.png')}
-    PACGUM_SPRITE = {QTk.newImage photo(file: CD # '/ress/pacgum.png')}
-    PACPOW_SPRITE = {QTk.newImage photo(file: CD # '/ress/pacpow.png')}
 
-    GHOST_UP_SPRITE = {QTk.newImage photo(file: CD # '/ress/ghost_up.png')}
-    GHOST_DOWN_SPRITE = {QTk.newImage photo(file: CD # '/ress/ghost_down.png')}
-    GHOST_RIGHT_SPRITE = {QTk.newImage photo(file: CD # '/ress/ghost_right.png')}
-    GHOST_LEFT_SPRITE = {QTk.newImage photo(file: CD # '/ress/ghost_left.png')}
-
-    SCARED_UP_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_up.png')}
-    SCARED_DOWN_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_down.png')}
-    SCARED_RIGHT_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_right.png')}
-    SCARED_LEFT_SPRITE = {QTk.newImage photo(file: CD # '/ress/scared_left.png')}
+    SNAKE_HEAD = {QTk.newImage photo(file: CD # '/ress/head_east.png')}
+    SNAKE_TAIL = {QTk.newImage photo(file: CD # '/ress/tail_east.png')}
     
     class GameObject
         attr 'id' 'type' 'sprite' 'x' 'y'
