@@ -62,16 +62,36 @@ define
         [] 'NORTH' then SNAKE_TAIL_N
         end
     end
-    
-    class GameObject
-        attr 'id' 'type' 'sprite' 'x' 'y'
 
-        meth init(Id Type Sprite X Y)
+    class Snake
+
+        meth init(Id Head_Loc Head_dir Tail_loc Tail_dir)
+
+            'x_head' := Head_Loc.1
+            'y_head' := Head_Loc.2.1
+            'head_dir' := Head_dir
+
+            'x_tail' := Tail_loc.1
+            'y_tail' := Tail_loc.2.1
+            'tail_dir' := Tail_dir
+
+            'type' := 'snake'
             'id' := Id
-            'type' := Type
-            'sprite' := Sprite
-            'x' := X
-            'y' := Y
+            'sprite' := GROUND_TILE
+
+            {setDirection}
+        end
+
+        meth setDirection()
+                if @head_dir == 'NORTH' then
+                    'sprite' := SNAKE_HEAD_N
+                elseif @head_dir == 'SOUTH' then
+                    'sprite' := SNAKE_HEAD_S
+                elseif @head_dir == 'EAST' then
+                    'sprite' := SNAKE_HEAD_E
+                elseif @head_dir == 'WEST' then
+                    'sprite' := SNAKE_HEAD_W
+                end
         end
 
         meth getType($) @type end
@@ -80,154 +100,22 @@ define
             {Buffer copy(@sprite 'to': o(@x @y))}
         end
 
-        meth update(GCPort) skip end
-    end
-
-    class Bot from GameObject
-        attr 'isMoving' 'moveDir' 'targetX' 'targetY'
-
-        meth init(Id Type Sprite X Y)
-            GameObject, init(Id Type Sprite X Y)
-            'isMoving' := false
-            'targetX' := X
-            'targetY' := Y
-        end
-
-        meth setTarget(Dir)
-            'isMoving' := true
-            'moveDir' := Dir
-            if Dir == 'north' then
-                'targetY' := @y - 32
-            elseif Dir == 'south' then
-                'targetY' := @y + 32
-            elseif Dir == 'east' then
-                'targetX' := @x + 32
-            elseif Dir == 'west' then
-                'targetX' := @x - 32
-            end
-        end
-
         meth move(GCPort)
-            if @moveDir == 'north' then
-                'y' := @y - 4
-            elseif @moveDir == 'south' then
-                'y' := @y + 4
-            elseif @moveDir == 'east' then
-                'x' := @x + 4
-            elseif @moveDir == 'west' then
-                'x' := @x - 4
+            if @head_dir == 'NORTH' then
+                'y' := @y - 32
+            elseif @head_dir == 'SOUTH' then
+                'y' := @y + 32
+            elseif @head_dir == 'EAST' then
+                'x' := @x + 32
+            elseif @head_dir == 'WEST' then
+                'x' := @x - 32
             end
 
-            if @x == @targetX andthen @y == @targetY then
-                NewX = @x div 32
-                NewY = @y div 32
-            in
-                'isMoving' := false
-                {Send GCPort movedTo(@id @type NewX NewY)}
-            end
+            {Send GCPort movedTo(@id @type @x @y)}
         end
 
         meth update(GCPort)
-            if @isMoving then
-                {self move(GCPort)}
-            end
-        end
-    end
-
-    class Ghost from Bot
-        attr 'scared'
-
-        meth init(Id X Y)
-            Bot, init(Id 'ghost' GHOST_DOWN_SPRITE X Y)
-            'scared' := false
-        end
-
-        meth setScared(Value)
-            if Value then
-                if @moveDir == 'north' then
-                    'sprite' := SCARED_UP_SPRITE
-                elseif @moveDir == 'south' then
-                    'sprite' := SCARED_DOWN_SPRITE
-                elseif @moveDir == 'east' then
-                    'sprite' := SCARED_RIGHT_SPRITE
-                elseif @moveDir == 'west' then
-                    'sprite' := SCARED_RIGHT_SPRITE
-                end
-            else
-                if @moveDir == 'north' then
-                    'sprite' := GHOST_UP_SPRITE
-                elseif @moveDir == 'south' then
-                    'sprite' := GHOST_DOWN_SPRITE
-                elseif @moveDir == 'east' then
-                    'sprite' := GHOST_RIGHT_SPRITE
-                elseif @moveDir == 'west' then
-                    'sprite' := GHOST_RIGHT_SPRITE
-                end
-            end
-            'scared' := Value
-        end
-
-        meth setTarget(Dir)
-            'isMoving' := true
-            'moveDir' := Dir
-            if Dir == 'north' then
-                'sprite' := if @scared then SCARED_UP_SPRITE  else GHOST_UP_SPRITE end
-                'targetY' := @y - 32
-            elseif Dir == 'south' then
-                'sprite' := if @scared then SCARED_DOWN_SPRITE  else GHOST_DOWN_SPRITE end
-                'targetY' := @y + 32
-            elseif Dir == 'east' then
-                'sprite' := if @scared then SCARED_RIGHT_SPRITE else GHOST_RIGHT_SPRITE end
-                'targetX' := @x + 32
-            elseif Dir == 'west' then
-                'sprite' := if @scared then SCARED_LEFT_SPRITE else GHOST_LEFT_SPRITE end
-                'targetX' := @x - 32
-            end
-        end
-    end
-
-    class Snake from Bot
-
-        meth init(Id X Y)
-
-            Bot, init(Id 'snake' SNAKE_HEAD_N X Y)
-            {setDirection}
-        end
-
-        meth setDirection()
-                if @moveDir == 'NORTH' then
-                    'sprite' := SNAKE_HEAD_N
-                elseif @moveDir == 'SOUTH' then
-                    'sprite' := SNAKE_HEAD_S
-                elseif @moveDir == 'EAST' then
-                    'sprite' := SNAKE_HEAD_E
-                elseif @moveDir == 'WEST' then
-                    'sprite' := SNAKE_HEAD_W
-                end
-        end
-
-        meth setTarget(Dir)
-            'isMoving' := true
-            'moveDir' := Dir
-            if Dir == 'north' then
-                'sprite' := if @scared then SCARED_UP_SPRITE  else GHOST_UP_SPRITE end
-                'targetY' := @y - 32
-            elseif Dir == 'south' then
-                'sprite' := if @scared then SCARED_DOWN_SPRITE  else GHOST_DOWN_SPRITE end
-                'targetY' := @y + 32
-            elseif Dir == 'east' then
-                'sprite' := if @scared then SCARED_RIGHT_SPRITE else GHOST_RIGHT_SPRITE end
-                'targetX' := @x + 32
-            elseif Dir == 'west' then
-                'sprite' := if @scared then SCARED_LEFT_SPRITE else GHOST_LEFT_SPRITE end
-                'targetX' := @x - 32
-            end
-        end
-    end
-
-    class Pacmoz from Bot
-        meth init(Id X Y)
-            Bot, init(Id 'pacmoz' PACMOZ_SPRITE X Y)
+            {self move(GCPort)}
         end
     end
 
@@ -295,16 +183,6 @@ define
             {Send @gcPort pacpowSpawned(X Y)}
         end
 
-        meth setAllScared(Value)
-            GameObjects = {Dictionary.items @gameObjects}
-        in
-            for Gobj in GameObjects do
-                if {Gobj getType($)} == 'ghost' then
-                    {Gobj setScared(Value)}
-                end
-            end
-        end
-
         meth dispawnPacpow(X Y)
             {self setAllScared(true)}
             thread
@@ -347,22 +225,27 @@ define
             {@background copy(FRUIT 'to': o(X_fruit * 32 Y_fruit * 32))}
         end
 
-        meth spawnBot(Type X Y $)
+        meth spawnSnake(Type Head_loc Head_dir $)
             Bot
             Id = {self genId($)}
+
+            X_head = 0 * 32
+            Y_head = 1 * 32
+            Head_dir = 'EAST'
+
+            X_tail = 0 * 32
+            Y_tail = 0 * 32
+            Tail_dir = 'EAST'
         in
-            if Type == 'pacmoz' then
-                Bot = {New Pacmoz init(Id X * 32 Y * 32)}
-            else
-                Bot = {New Ghost init(Id X * 32 Y * 32)}
-            end
+            
+            Bot = {New Snake init(Id [X_head Y_head] Head_dir [X_tail Y_tail] Tail_dir)}
 
             {Dictionary.put @gameObjects Id Bot}
             {Send @gcPort movedTo(Id Type X Y)}
             Id
         end
 
-        meth dispawnBot(Id)
+        meth dispawnSnake(Id)
             {Dictionary.remove @gameObjects Id}
         end
 
@@ -370,7 +253,7 @@ define
             Bot = {Dictionary.condGet @gameObjects Id 'null'}
         in
             if Bot \= 'null' then
-                {Bot setTarget(Dir)}
+                {Bot.move Dir}
             end
         end
 
