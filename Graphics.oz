@@ -13,8 +13,16 @@ define
     WALL_TILE = {QTk.newImage photo(file: CD # '/ress/wall.png')}
     GROUND_TILE = {QTk.newImage photo(file: CD # '/ress/ground.png')}
 
-    SNAKE_HEAD = {QTk.newImage photo(file: CD # '/ress/head_east.png')}
-    SNAKE_TAIL = {QTk.newImage photo(file: CD # '/ress/tail_east.png')}
+    SNAKE_HEAD_ORIGINAL = {QTk.newImage photo(file: CD # '/ress/head_east.png')}
+    SNAKE_TAIL_ORIGINAL = {QTk.newImage photo(file: CD # '/ress/tail_east.png')}
+
+    % Create rotated versions (90 degrees clockwise)
+    SNAKE_HEAD = {QTk.newImage photo}
+    SNAKE_TAIL = {QTk.newImage photo}
+    {SNAKE_HEAD copy(SNAKE_HEAD_ORIGINAL)}
+    {SNAKE_TAIL copy(SNAKE_TAIL_ORIGINAL)}
+    {SNAKE_HEAD rotate(90)}
+    {SNAKE_TAIL rotate(90)}
     
     class GameObject
         attr 'id' 'type' 'sprite' 'x' 'y'
