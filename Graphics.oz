@@ -189,19 +189,17 @@ define
     class Snake from Bot
 
         meth init(Id X Y)
-
             Bot, init(Id 'snake' SNAKE_HEAD_N X Y)
-            {setDirection}
         end
 
         meth setDirection()
-                if @moveDir == 'NORTH' then
+                if @moveDir == 'north' then
                     'sprite' := SNAKE_HEAD_N
-                elseif @moveDir == 'SOUTH' then
+                elseif @moveDir == 'south' then
                     'sprite' := SNAKE_HEAD_S
-                elseif @moveDir == 'EAST' then
+                elseif @moveDir == 'east' then
                     'sprite' := SNAKE_HEAD_E
-                elseif @moveDir == 'WEST' then
+                elseif @moveDir == 'west' then
                     'sprite' := SNAKE_HEAD_W
                 end
         end
@@ -210,16 +208,16 @@ define
             'isMoving' := true
             'moveDir' := Dir
             if Dir == 'north' then
-                'sprite' := if @scared then SCARED_UP_SPRITE  else GHOST_UP_SPRITE end
+                'sprite' := SNAKE_HEAD_N
                 'targetY' := @y - 32
             elseif Dir == 'south' then
-                'sprite' := if @scared then SCARED_DOWN_SPRITE  else GHOST_DOWN_SPRITE end
+                'sprite' := SNAKE_HEAD_S
                 'targetY' := @y + 32
             elseif Dir == 'east' then
-                'sprite' := if @scared then SCARED_RIGHT_SPRITE else GHOST_RIGHT_SPRITE end
+                'sprite' := SNAKE_HEAD_E
                 'targetX' := @x + 32
             elseif Dir == 'west' then
-                'sprite' := if @scared then SCARED_LEFT_SPRITE else GHOST_LEFT_SPRITE end
+                'sprite' := SNAKE_HEAD_W
                 'targetX' := @x - 32
             end
         end
@@ -353,6 +351,8 @@ define
         in
             if Type == 'pacmoz' then
                 Bot = {New Pacmoz init(Id X * 32 Y * 32)}
+            elseif Type == 'snake' then
+                Bot = {New Snake init(Id X * 32 Y * 32)}
             else
                 Bot = {New Ghost init(Id X * 32 Y * 32)}
             end
