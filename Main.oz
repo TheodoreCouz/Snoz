@@ -76,6 +76,14 @@ define
         Maze = {Input.genMaze}
         {GUI buildMaze(Maze)}
 
+        % Spawn all bots from Input configuration
+        Bots = {Input.bots}
+        for Bot in Bots do
+            case Bot of bot(Type _ X Y) then
+                {GUI spawnBot(Type X Y _)}
+            end
+        end
+
         Instance = {GameController state(
             'gui': GUI
             'maze': Maze

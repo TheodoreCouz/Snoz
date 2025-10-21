@@ -87,6 +87,30 @@ define
         end
     end
 
+    class Snake
+        attr 'id' 'type' 'headX' 'headY' 'tailX' 'tailY' 'headSprite' 'tailSprite'
+
+        meth init(Id HeadX HeadY TailX TailY)
+            'id' := Id
+            'type' := 'snake'
+            'headX' := HeadX
+            'headY' := HeadY
+            'tailX' := TailX
+            'tailY' := TailY
+            'headSprite' := SNAKE_HEAD
+            'tailSprite' := SNAKE_TAIL
+        end
+
+        meth getType($) @type end
+
+        meth render(Buffer)
+            {Buffer copy(@headSprite 'to': o(@headX @headY))}
+            {Buffer copy(@tailSprite 'to': o(@tailX @tailY))}
+        end
+
+        meth update(GCPort) skip end
+    end
+
     class Graphics
         attr
             'buffer' 'buffered' 'canvas' 'window'
@@ -161,11 +185,16 @@ define
             Id = {self genId($)}
         in
             if Type == 'snake' then
-                skip
+                % Head at (X, Y), Tail at (X, Y-1) - tail is north of head
+                TailX = X * 32
+                TailY = (Y - 1) * 32
+                HeadX = X * 32
+                HeadY = Y * 32
+            in
+                Bot = {New Snake init(Id HeadX HeadY TailX TailY)}
+                {Dictionary.put @gameObjects Id Bot}
+                {Send @gcPort movedTo(Id Type X Y)}
             end
-
-            {Dictionary.put @gameObjects Id Bot}
-            {Send @gcPort movedTo(Id Type X Y)}
             Id
         end
 
