@@ -108,13 +108,15 @@ define
         
         meth init(GCPort)
             Height = 20*32
-            Width = 20*32
+            GridWidth = 20*32
+            PanelWidth = 200
+            Width = GridWidth + PanelWidth
         in
             'running' := true
             'gcPort' := GCPort
 
-            'buffer' := {QTk.newImage photo('width': Width 'height': Height)}
-            'buffered' := {QTk.newImage photo('width': Width 'height': Height)}
+            'buffer' := {QTk.newImage photo('width': GridWidth 'height': Height)}
+            'buffered' := {QTk.newImage photo('width': GridWidth 'height': Height)}
 
             'window' := {QTk.build td(
                 canvas(
@@ -130,9 +132,9 @@ define
             )}
 
             'score' := 0
-            {@canvas create('image' Width div 2 Height div 2 'image': @buffer)}
-            {@canvas create('text' 128 16 'text': 'score: 0' 'fill': 'white' 'font': FONT 'handle': @scoreHandle)}
-            'background' := {QTk.newImage photo('width': Width 'height': Height)}
+            {@canvas create('image' GridWidth div 2 Height div 2 'image': @buffer)}
+            {@canvas create('text' GridWidth + (PanelWidth div 2) 50 'text': 'score: 0' 'fill': 'white' 'font': FONT 'handle': @scoreHandle)}
+            'background' := {QTk.newImage photo('width': GridWidth 'height': Height)}
             {@window 'show'}
 
             'gameObjects' := {Dictionary.new}
