@@ -68,18 +68,18 @@ define
         meth init(Id Head_Loc Head_dir Tail_loc Tail_dir)
 
             'x_head' := Head_Loc.1
-            'y_head' := Head_Loc.2.1
+            'y_head' := Head_Loc.2
             'head_dir' := Head_dir
 
             'x_tail' := Tail_loc.1
-            'y_tail' := Tail_loc.2.1
+            'y_tail' := Tail_loc.2
             'tail_dir' := Tail_dir
 
             'type' := 'snake'
             'id' := Id
             'sprite' := GROUND_TILE
 
-            {setDirection}
+            {self setDirection()}
         end
 
         meth setDirection()
@@ -94,24 +94,29 @@ define
                 end
         end
 
+        meth setDir(Dir)
+            'head_dir' := Dir
+            {self setDirection()}
+        end
+
         meth getType($) @type end
 
         meth render(Buffer)
-            {Buffer copy(@sprite 'to': o(@x @y))}
+            {Buffer copy(@sprite 'to': o(@x_head @y_head))}
         end
 
         meth move(GCPort)
             if @head_dir == 'NORTH' then
-                'y' := @y - 32
+                'y_head' := @y_head - 32
             elseif @head_dir == 'SOUTH' then
-                'y' := @y + 32
+                'y_head' := @y_head + 32
             elseif @head_dir == 'EAST' then
-                'x' := @x + 32
+                'x_head' := @x_head + 32
             elseif @head_dir == 'WEST' then
-                'x' := @x - 32
+                'x_head' := @x_head - 32
             end
 
-            {Send GCPort movedTo(@id @type @x @y)}
+            {Send GCPort movedTo(@id @type @x_head @y_head)}
         end
 
         meth update(GCPort)
@@ -225,24 +230,32 @@ define
             {@background copy(FRUIT 'to': o(X_fruit * 32 Y_fruit * 32))}
         end
 
-        meth spawnSnake(Type Head_loc Head_dir $)
+        meth spawnSnake(Type Head_loc Head_dir Tail_loc Tail_dir $)
             Bot
             Id = {self genId($)}
 
-            X_head = 0 * 32
-            Y_head = 1 * 32
-            Head_dir = 'EAST'
+            X_head = Head_loc.1 * 32
+            Y_head = Head_loc.2 * 32
 
-            X_tail = 0 * 32
-            Y_tail = 0 * 32
-            Tail_dir = 'EAST'
+            X_tail = Tail_loc.1 * 32
+            Y_tail = Tail_loc.2 * 32
         in
-            
+
             Bot = {New Snake init(Id [X_head Y_head] Head_dir [X_tail Y_tail] Tail_dir)}
 
             {Dictionary.put @gameObjects Id Bot}
-            {Send @gcPort movedTo(Id Type X Y)}
+            {Send @gcPort movedTo(Id Type X_head Y_head)}
             Id
+        end
+
+        meth spawnBot(Type X Y $)
+            % Wrapper method for backward compatibility
+            % Creates a snake at position (X, Y) with default direction EAST
+            Head_loc = [X Y]
+            Tail_loc = [X - 1 Y]
+            Dir = 'EAST'
+        in
+            {self spawnSnake(Type Head_loc Dir Tail_loc Dir $)}
         end
 
         meth dispawnSnake(Id)
@@ -253,8 +266,13 @@ define
             Bot = {Dictionary.condGet @gameObjects Id 'null'}
         in
             if Bot \= 'null' then
-                {Bot.move Dir}
+                {Bot setDir(Dir)}
             end
+        end
+
+        meth setAllScared(Scared)
+            % Stub method - not used in snake game
+            skip
         end
 
         meth updateScore(Score)
