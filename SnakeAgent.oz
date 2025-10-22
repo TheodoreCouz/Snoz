@@ -266,17 +266,17 @@ define
     end
 
 
-    fun {SpawnAgent init(Id GCPort Maze)}
-        Stream 
+    fun {SpawnAgent init(Id GCPort Maze X Y Orientation)}
+        Stream
         Port = {NewPort Stream}
 
         Instance = {Agent state(
             'id': Id
             'maze': Maze
             'gcport': GCPort
-            'dir':'stopped'
-            'x':~1
-            'y':~1
+            'dir':Orientation
+            'x':X
+            'y':Y
             'tracker':tracker()
             'port':Port
         )}
