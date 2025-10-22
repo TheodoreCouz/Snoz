@@ -121,6 +121,7 @@ TAIL_OFFSET = offset(
 
     class Snake
         attr 'id' 'type' 'headX' 'headY' 'tailX' 'tailY' 'headSprite' 'tailSprite' 'headOri' 'tailOri'
+             'isMoving' 'moveDir' 'targetHeadX' 'targetHeadY' 'targetTailX' 'targetTailY'
 
         meth init(Id Type HeadX HeadY TailX TailY Orientation)
             'id' := Id
@@ -131,6 +132,11 @@ TAIL_OFFSET = offset(
             'tailY' := TailY
             'headOri' := Orientation
             'tailOri' := Orientation
+            'isMoving' := false
+            'targetHeadX' := HeadX
+            'targetHeadY' := HeadY
+            'targetTailX' := TailX
+            'targetTailY' := TailY
 
             if Type == 'snake' then
                 'headSprite' := SNAKE1_HEAD
@@ -144,13 +150,71 @@ TAIL_OFFSET = offset(
 
         meth getType($) @type end
 
-        meth render(Buffer)
+        meth setTarget(Dir)
+            'isMoving' := true
+            'moveDir' := Dir
 
+            % Convert direction string to uppercase for sprite access
+            UpperDir = case Dir
+                       of 'north' then 'NORTH'
+                       [] 'south' then 'SOUTH'
+                       [] 'east' then 'EAST'
+                       [] 'west' then 'WEST'
+                       else 'EAST'
+                       end
+
+            'headOri' := UpperDir
+            'tailOri' := UpperDir
+
+            if Dir == 'north' then
+                'targetHeadY' := @headY - 32
+                'targetTailY' := @tailY - 32
+            elseif Dir == 'south' then
+                'targetHeadY' := @headY + 32
+                'targetTailY' := @tailY + 32
+            elseif Dir == 'east' then
+                'targetHeadX' := @headX + 32
+                'targetTailX' := @tailX + 32
+            elseif Dir == 'west' then
+                'targetHeadX' := @headX - 32
+                'targetTailX' := @tailX - 32
+            end
+        end
+
+        meth move(GCPort)
+            if @moveDir == 'north' then
+                'headY' := @headY - 4
+                'tailY' := @tailY - 4
+            elseif @moveDir == 'south' then
+                'headY' := @headY + 4
+                'tailY' := @tailY + 4
+            elseif @moveDir == 'east' then
+                'headX' := @headX + 4
+                'tailX' := @tailX + 4
+            elseif @moveDir == 'west' then
+                'headX' := @headX - 4
+                'tailX' := @tailX - 4
+            end
+
+            if @headX == @targetHeadX andthen @headY == @targetHeadY then
+                NewX = @headX div 32
+                NewY = @headY div 32
+            in
+                'isMoving' := false
+                {Send GCPort movedTo(@id @type NewX NewY)}
+            end
+        end
+
+        meth render(Buffer)
             {Buffer copy(@headSprite.@headOri 'to': o(@headX @headY))}
             {Buffer copy(@tailSprite.@tailOri 'to': o(@tailX @tailY))}
         end
 
-        meth update(GCPort) skip end
+        meth update(GCPort)
+            if @isMoving then
+                {self move(GCPort)}
+            end
+        end
     end
 
     class Graphics
@@ -250,6 +314,10 @@ TAIL_OFFSET = offset(
             if Bot \= 'null' then
                 {Bot setTarget(Dir)}
             end
+        end
+
+        meth stopGame()
+            'running' := false
         end
 
         meth updateScore(Score)

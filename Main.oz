@@ -29,6 +29,21 @@ define
             {State.gui moveBot(Id Dir)}
             {GameController State}
         end
+
+        % function to handle game over
+        fun {GameOver gameOver(Id Reason)}
+            {System.show log(gameOver Id Reason)}
+            {State.gui stopGame()}
+            {GameController {AdjoinAt State 'running' false}}
+        end
+
+        % function to send tick to all agents
+        fun {Tick tick()}
+            if {HasFeature State 'running'} andthen State.running then
+                {Broadcast State.tracker tick()}
+            end
+            {GameController State}
+        end
         % function to handle the PacGumSpawned message
         fun {PacgumSpawned pacgumSpawned(X Y)}
             Index = Y * 28 + X
@@ -67,6 +82,8 @@ define
                 'moveTo': MoveTo
                 'movedTo': MovedTo
                 'pacgumSpawned': PacgumSpawned
+                'gameOver': GameOver
+                'tick': Tick
                 %TODO: add other messages here
                 %...
             )
@@ -124,8 +141,17 @@ define
             'maze': Maze
             'score': 0
             'tracker': NewTracker
+            'running': true
         )}
+
+        % Ticker thread to send periodic tick messages
+        proc {Ticker}
+            {Delay 500} % Wait 500ms between ticks
+            {Send Port tick()}
+            {Ticker}
+        end
     in
+        thread {Ticker} end
         % TODO: log the winning team name and the score then use {Application.exit 0}
         {Handler Stream Instance}
     end
