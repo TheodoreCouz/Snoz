@@ -13,16 +13,40 @@ define
     WALL_TILE = {QTk.newImage photo(file: CD # '/ress/wall.png')}
     GROUND_TILE = {QTk.newImage photo(file: CD # '/ress/ground.png')}
 
-    SNAKE_HEAD_ORIGINAL = {QTk.newImage photo(file: CD # '/ress/head_east.png')}
-    SNAKE_TAIL_ORIGINAL = {QTk.newImage photo(file: CD # '/ress/tail_east.png')}
+    % Snake 1: sprites
+    SNAKE1_HEAD = head(
+        'EAST': {QTk.newImage photo(file: CD # '/ress/head_east.png')}
+        'SOUTH': {QTk.newImage photo(file: CD # '/ress/head_south.png')}
+        'WEST': {QTk.newImage photo(file: CD # '/ress/head_west.png')}
+        'NORTH': {QTk.newImage photo(file: CD # '/ress/head_north.png')}
+        )
+    SNAKE1_TAIL = tail(
+        'EAST': {QTk.newImage photo(file: CD # '/ress/tail_east.png')}
+        'SOUTH': {QTk.newImage photo(file: CD # '/ress/tail_south.png')}
+        'WEST': {QTk.newImage photo(file: CD # '/ress/tail_west.png')}
+        'NORTH': {QTk.newImage photo(file: CD # '/ress/tail_north.png')}
+        )
 
-    % Create rotated versions (90 degrees clockwise)
-    SNAKE_HEAD = {QTk.newImage photo}
-    SNAKE_TAIL = {QTk.newImage photo}
-    {SNAKE_HEAD copy(SNAKE_HEAD_ORIGINAL)}
-    {SNAKE_TAIL copy(SNAKE_TAIL_ORIGINAL)}
-    {SNAKE_HEAD rotate(90)}
-    {SNAKE_TAIL rotate(90)}
+    % Snake 2: sprites
+    SNAKE2_HEAD = head(
+        'EAST': {QTk.newImage photo(file: CD # '/ress/head2_east.png')}
+        'SOUTH': {QTk.newImage photo(file: CD # '/ress/head2_south.png')}
+        'WEST': {QTk.newImage photo(file: CD # '/ress/head2_west.png')}
+        'NORTH': {QTk.newImage photo(file: CD # '/ress/head2_north.png')}
+        )
+    SNAKE2_TAIL = tail(
+        'EAST': {QTk.newImage photo(file: CD # '/ress/tail2_east.png')}
+        'SOUTH': {QTk.newImage photo(file: CD # '/ress/tail2_south.png')}
+        'WEST': {QTk.newImage photo(file: CD # '/ress/tail2_west.png')}
+        'NORTH': {QTk.newImage photo(file: CD # '/ress/tail2_north.png')}
+        )
+
+TAIL_OFFSET = offset(
+    'EAST': offset('x': ~1 'y': 0)
+    'SOUTH': offset('x': 0 'y': ~1)
+    'WEST': offset('x': 1 'y': 0)
+    'NORTH': offset('x': 0 'y': 1)
+)
     
     class GameObject
         attr 'id' 'type' 'sprite' 'x' 'y'
@@ -96,24 +120,34 @@ define
     end
 
     class Snake
-        attr 'id' 'type' 'headX' 'headY' 'tailX' 'tailY' 'headSprite' 'tailSprite'
+        attr 'id' 'type' 'headX' 'headY' 'tailX' 'tailY' 'headSprite' 'tailSprite' 'headOri' 'tailOri'
 
-        meth init(Id HeadX HeadY TailX TailY)
+        meth init(Id Type HeadX HeadY TailX TailY Orientation)
             'id' := Id
-            'type' := 'snake'
+            'type' := Type
             'headX' := HeadX
             'headY' := HeadY
             'tailX' := TailX
             'tailY' := TailY
-            'headSprite' := SNAKE_HEAD
-            'tailSprite' := SNAKE_TAIL
+            'headOri' := Orientation
+            'tailOri' := Orientation
+
+            if Type == 'snake' then
+                'headSprite' := SNAKE1_HEAD
+                'tailSprite' := SNAKE1_TAIL
+            elseif Type == 'snake2' then
+                'headSprite' := SNAKE2_HEAD
+                'tailSprite' := SNAKE2_TAIL
+            else skip
+            end
         end
 
         meth getType($) @type end
 
         meth render(Buffer)
-            {Buffer copy(@headSprite 'to': o(@headX @headY))}
-            {Buffer copy(@tailSprite 'to': o(@tailX @tailY))}
+
+            {Buffer copy(@headSprite.@headOri 'to': o(@headX @headY))}
+            {Buffer copy(@tailSprite.@tailOri 'to': o(@tailX @tailY))}
         end
 
         meth update(GCPort) skip end
@@ -188,18 +222,18 @@ define
             end
         end
 
-        meth spawnBot(Type X Y $)
+        meth spawnBot(Type X Y Orientation $)
             Bot
             Id = {self genId($)}
         in
-            if Type == 'snake' then
+            local
                 % Head at (X, Y), Tail at (X, Y-1) - tail is north of head
-                TailX = X * 32
-                TailY = (Y - 1) * 32
+                TailX = (X + TAIL_OFFSET.Orientation.'x') * 32
+                TailY = (Y + TAIL_OFFSET.Orientation.'y') * 32
                 HeadX = X * 32
                 HeadY = Y * 32
             in
-                Bot = {New Snake init(Id HeadX HeadY TailX TailY)}
+                Bot = {New Snake init(Id Type HeadX HeadY TailX TailY Orientation)}
                 {Dictionary.put @gameObjects Id Bot}
                 {Send @gcPort movedTo(Id Type X Y)}
             end

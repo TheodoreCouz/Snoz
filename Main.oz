@@ -79,8 +79,8 @@ define
         % Spawn all bots from Input configuration
         Bots = Input.bots
         for Bot in Bots do
-            case Bot of bot(Type _ X Y) then
-                {GUI spawnBot(Type X Y _)}
+            case Bot of bot(Type _ X Y Orientation) then
+                {GUI spawnBot(Type X Y Orientation _)}
             end
         end
 

@@ -5,7 +5,8 @@ export
     'bots': Bots
 define
     Bots = [
-        bot('snake' 'snakeBot' 3 3)
+        bot('snake' 'SB1' 1 0 'EAST')
+        bot('snake2' 'SB2' 18 19 'WEST')
     ]
 
     Map = [
