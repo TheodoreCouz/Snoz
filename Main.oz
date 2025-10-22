@@ -23,12 +23,13 @@ define
         end
     end
 
-    % TODO: Complete this concurrent functional agent to handle all the message-passing between the GUI and the Agents
+    % Complete this concurrent functional agent to handle all the message-passing between the GUI and the Agents
     fun {GameController State}
         fun {MoveTo moveTo(Id Dir)}
             {State.gui moveBot(Id Dir)}
             {GameController State}
         end
+
         % function to handle the PacGumSpawned message
         fun {PacgumSpawned pacgumSpawned(X Y)}
             Index = Y * 28 + X
@@ -37,9 +38,7 @@ define
             {Broadcast State.tracker pacgumSpawned(X Y)}
             {GameController {AdjoinAt State 'items' NewItems}}
         end
-        % TODO: add other functions to handle the messages here
-        %...
-        
+
         % function to handle the movedTo message
         fun {MovedTo movedTo(Id Type X Y)}
             {System.show log(movedTo Id Type X Y)}
@@ -58,6 +57,13 @@ define
                 {GameController State}
             end
         end
+
+        % function to handle the gameOver message
+        fun {GameOver gameOver(Id)}
+            {System.show 'Game Over - Snake '#Id#' hit a border or wall'}
+            {Application.exit 0}
+            {GameController State}
+        end
     in
         % TODO: complete the interface and discard and report unknown messages
         % every function is a field in the interface() record
@@ -67,14 +73,13 @@ define
                 'moveTo': MoveTo
                 'movedTo': MovedTo
                 'pacgumSpawned': PacgumSpawned
-                %TODO: add other messages here
-                %...
+                'gameOver': GameOver
             )
         in
-            if {HasFeature Msg Dispatch} then
+            if {HasFeature Interface Dispatch} then
                 {Interface.Dispatch Msg}
             else
-                % {System.show log('Unhandle message' Dispatch)}
+                {System.show log('Unhandled message' Dispatch)}
                 {GameController State}
             end
         end

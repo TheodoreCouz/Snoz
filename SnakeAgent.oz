@@ -10,10 +10,10 @@ define
     fun {FreeAround State}
         IN IS IE IW AroundI
     in
-        IN = (State.y - 1)*28+State.x+1
-        IS = (State.y + 1)*28+State.x+1
-        IE = State.y*28+(State.x+1)+1
-        IW = State.y*28+(State.x-1)+1
+        IN = (State.y - 1)*20+State.x+1
+        IS = (State.y + 1)*20+State.x+1
+        IE = State.y*20+(State.x+1)+1
+        IW = State.y*20+(State.x-1)+1
 
         AroundI = [IN#'north' IS#'south' IE#'east' IW#'west'] %North South East West
 
@@ -33,6 +33,28 @@ define
     end
 
 
+    % Check if position is within grid bounds
+    fun {IsWithinBounds X Y}
+        X >= 0 andthen X < 20 andthen Y >= 0 andthen Y < 20
+    end
+
+
+    % Check if the next move in the given direction would hit a border or wall
+    fun {CanMove State Dir}
+        NextPos = {NextMove State Dir}
+        NextX = NextPos.'x'
+        NextY = NextPos.'y'
+    in
+        if {IsWithinBounds NextX NextY} then
+            % Check if it's not a wall
+            MazeIndex = NextY * 20 + NextX + 1
+            {List.nth State.maze MazeIndex} \= 1
+        else
+            false
+        end
+    end
+
+
     fun {Random Around BadDir}
         RandNbr RandDir
     in
@@ -45,14 +67,14 @@ define
 
 
     fun {NextMove State Dir}
-        I 
+        I
     in
         case Dir
-        of 'north' then I = (State.y - 1)*28+State.x+1 m('x':State.x 'y':State.y-1)
-        [] 'south' then I = (State.y + 1)*28+State.x+1 m('x':State.x 'y':State.y+1)
-        [] 'east' then I = State.y*28+(State.x+1)+1 m('x':State.x+1 'y':State.y)
-        [] 'west' then I = State.y*28+(State.x-1)+1 m('x':State.x-1 'y':State.y)
-        end    
+        of 'north' then I = (State.y - 1)*20+State.x+1 m('x':State.x 'y':State.y-1)
+        [] 'south' then I = (State.y + 1)*20+State.x+1 m('x':State.x 'y':State.y+1)
+        [] 'east' then I = State.y*20+(State.x+1)+1 m('x':State.x+1 'y':State.y)
+        [] 'west' then I = State.y*20+(State.x-1)+1 m('x':State.x-1 'y':State.y)
+        end
     end
 
 
@@ -121,62 +143,39 @@ define
     fun {Agent State}
 
 
-        fun {MovedTo movedTo(Id Type X Y)}    
-            Around RandNbr RandDir Idx Next TempState M BadDir BadIdx NewBot NewTracker
+        fun {MovedTo movedTo(Id Type X Y)}
+            NewBot NewTracker TempState
         in
+            % Update tracker for other bots
             if State.id \= Id andthen {ContainsRecord State.tracker Id} == false then
                 NewBot = bot('id':Id 'type':Type 'x':X 'y':Y 'alive':true)
                 NewTracker = {AdjoinAt State.tracker Id NewBot}
             elseif State.id \= Id then
                 NewBot = {Adjoin State.tracker.Id bot('x':X 'y':Y)}
                 NewTracker = {AdjoinAt State.tracker Id NewBot}
-            else NewTracker = State.tracker
+            else
+                NewTracker = State.tracker
             end
 
+            % Handle this snake's movement
             if Id == State.id then
-                %if {Or {And (X == State.x) (Y == State.y)} {And (State.x == ~1) (State.y == ~1)}} then
-                   
-                    TempState = {Adjoin State state('x':X 'y':Y)}
-                    
-                    
-                    Around = {FreeAround TempState}
-                 
-                    if {List.length Around} > 2 then
-                        BadDir = {Inverse TempState.dir}
-                        BadIdx = {Contains Around BadDir 1}
-                        RandDir= {Random Around BadDir}
-                    elseif TempState.dir == 'stopped' then
-                        RandNbr = {OS.rand} mod {List.length Around}
-                        RandDir = {List.nth Around RandNbr+1}
-                    elseif {List.length Around} == 1 then RandDir = {List.nth Around 1}
-                    else
-                        M = {NextMove TempState TempState.dir}
-                        Idx = {Contains Around TempState.dir 1}
-                        if Idx \= ~1 then RandDir = TempState.dir 
-                        else
-                            BadDir = {Inverse TempState.dir}
-                            BadIdx = {Contains Around BadDir 1}
-                            if BadIdx == ~1 then 
-                                RandNbr = {OS.rand} mod {List.length Around}
-                                RandDir = {List.nth Around RandNbr+1}
-                            else
-                                if BadIdx == 1 then RandDir = {List.nth Around 2} 
-                                else RandDir = {List.nth Around 1} 
-                                end
-                            end
-                        end
-                        
-                    end
+                % Update current position
+                TempState = {Adjoin State state('x':X 'y':Y 'tracker':NewTracker)}
 
-                    Next = {NextMove TempState RandDir}
-                    {Send State.gcport moveTo(State.id RandDir)}  
+                % Check if we can move forward in current direction
+                if {CanMove TempState TempState.dir} then
+                    % Move forward in the current direction
+                    {Send State.gcport moveTo(State.id TempState.dir)}
                     {Encounter TempState.x TempState.y TempState.id TempState}
-                      
-                    {Agent {Adjoin TempState state('dir':RandDir 'tracker':NewTracker)}}
-                % else
-                %     {Agent {AdjoinAt State 'tracker' NewTracker}}
-                % end
+                    {Agent TempState}
+                else
+                    % Cannot move forward - hit border or wall
+                    {System.show gameOver(State.id 'hit border or wall')}
+                    {Send State.gcport gameOver(State.id)}
+                    {Agent TempState}
+                end
             else
+                % Just update tracker for other bots
                 {Agent {AdjoinAt State 'tracker' NewTracker}}
             end
         end
