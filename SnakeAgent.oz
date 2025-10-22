@@ -120,62 +120,61 @@ define
 
     fun {Agent State}
 
-
-        fun {MovedTo movedTo(Id Type X Y)}    
-            Around RandNbr RandDir Idx Next TempState M BadDir BadIdx NewBot NewTracker
+        % Handle tick messages - trigger snake movement
+        fun {Tick tick()}
+            NextX NextY NextIndex
         in
+            % Calculate next position based on current direction
+            case State.dir
+            of 'north' then NextX = State.x NextY = State.y - 1
+            [] 'south' then NextX = State.x NextY = State.y + 1
+            [] 'east' then NextX = State.x + 1 NextY = State.y
+            [] 'west' then NextX = State.x - 1 NextY = State.y
+            [] 'stopped' then NextX = State.x NextY = State.y
+            end
+
+            % Check for border collision (grid is 20x20, coordinates 0-19)
+            if NextX < 0 orelse NextX >= 20 orelse NextY < 0 orelse NextY >= 20 then
+                % Hit border - send game over message
+                {System.show log(snake State.id hitBorder NextX NextY)}
+                {Send State.gcport gameOver(State.id border)}
+                {Agent State}
+            else
+                % Check for wall collision
+                NextIndex = NextY * 20 + NextX + 1
+                if {List.nth State.maze NextIndex} == 1 then
+                    % Hit wall - send game over message
+                    {System.show log(snake State.id hitWall NextX NextY)}
+                    {Send State.gcport gameOver(State.id wall)}
+                    {Agent State}
+                else
+                    % Move is valid - send moveTo message to trigger movement
+                    {System.show log(snake State.id moving State.dir to NextX NextY)}
+                    {Send State.gcport moveTo(State.id State.dir)}
+                    {Agent State}
+                end
+            end
+        end
+
+        fun {MovedTo movedTo(Id Type X Y)}
+            NewBot NewTracker
+        in
+            % Update tracker for other agents
             if State.id \= Id andthen {ContainsRecord State.tracker Id} == false then
                 NewBot = bot('id':Id 'type':Type 'x':X 'y':Y 'alive':true)
                 NewTracker = {AdjoinAt State.tracker Id NewBot}
             elseif State.id \= Id then
                 NewBot = {Adjoin State.tracker.Id bot('x':X 'y':Y)}
                 NewTracker = {AdjoinAt State.tracker Id NewBot}
-            else NewTracker = State.tracker
+            else
+                NewTracker = State.tracker
             end
 
+            % If this is our snake, update our position
             if Id == State.id then
-                %if {Or {And (X == State.x) (Y == State.y)} {And (State.x == ~1) (State.y == ~1)}} then
-                   
-                    TempState = {Adjoin State state('x':X 'y':Y)}
-                    
-                    
-                    Around = {FreeAround TempState}
-                 
-                    if {List.length Around} > 2 then
-                        BadDir = {Inverse TempState.dir}
-                        BadIdx = {Contains Around BadDir 1}
-                        RandDir= {Random Around BadDir}
-                    elseif TempState.dir == 'stopped' then
-                        RandNbr = {OS.rand} mod {List.length Around}
-                        RandDir = {List.nth Around RandNbr+1}
-                    elseif {List.length Around} == 1 then RandDir = {List.nth Around 1}
-                    else
-                        M = {NextMove TempState TempState.dir}
-                        Idx = {Contains Around TempState.dir 1}
-                        if Idx \= ~1 then RandDir = TempState.dir 
-                        else
-                            BadDir = {Inverse TempState.dir}
-                            BadIdx = {Contains Around BadDir 1}
-                            if BadIdx == ~1 then 
-                                RandNbr = {OS.rand} mod {List.length Around}
-                                RandDir = {List.nth Around RandNbr+1}
-                            else
-                                if BadIdx == 1 then RandDir = {List.nth Around 2} 
-                                else RandDir = {List.nth Around 1} 
-                                end
-                            end
-                        end
-                        
-                    end
-
-                    Next = {NextMove TempState RandDir}
-                    {Send State.gcport moveTo(State.id RandDir)}  
-                    {Encounter TempState.x TempState.y TempState.id TempState}
-                      
-                    {Agent {Adjoin TempState state('dir':RandDir 'tracker':NewTracker)}}
-                % else
-                %     {Agent {AdjoinAt State 'tracker' NewTracker}}
-                % end
+                {System.show log(snake State.id movedTo X Y)}
+                {Encounter X Y State.id State}
+                {Agent {Adjoin State state('x':X 'y':Y 'tracker':NewTracker)}}
             else
                 {Agent {AdjoinAt State 'tracker' NewTracker}}
             end
@@ -232,11 +231,12 @@ define
 
         fun {BonusDispawned Msg} {Agent State} end
 
-    
+
     in
         fun {$ Msg}
             Dispatch = {Label Msg}
             Interface = interface(
+                'tick': Tick
                 'movedTo': MovedTo
                 'pacgumSpawned':PacGumSpawned
                 'pacgumDispawned':PacGumDispawned
