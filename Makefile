@@ -15,8 +15,9 @@ endif
 # TODO: Change these parameters as you wish
 
 all: compile run
-compile: 
+compile:
 	$(OZC) -c Input.oz -o "Input.ozf"
+	$(OZC) -c SnakeAgent.oz
 	$(OZC) -c AgentManager.oz
 	$(OZC) -c Graphics.oz
 	$(OZC) -c Main.oz

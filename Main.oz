@@ -12,8 +12,16 @@ define
     proc {Broadcast Tracker Msg}
         {Record.forAll Tracker proc {$ Tracked} if Tracked.alive then {Send Tracked.port Msg} end end}
     end
-    % TODO: define here any auxiliary functions or procedures you may need
-    %...
+
+    % Convert orientation from uppercase to lowercase
+    fun {OrientationToLower Ori}
+        case Ori of 'EAST' then 'east'
+        [] 'WEST' then 'west'
+        [] 'NORTH' then 'north'
+        [] 'SOUTH' then 'south'
+        else Ori
+        end
+    end
 
     % TODO: Complete this concurrent functional agent to handle all the message-passing between the GUI and the Agents
     fun {GameController State}
@@ -32,13 +40,23 @@ define
         % TODO: add other functions to handle the messages here
         %...
         
-        % function to handle the movedTo message    % TODO: Complete this concurrent functional agent to handle all the message-passing between the GUI and the Agents
+        % function to handle the movedTo message
         fun {MovedTo movedTo(Id Type X Y)}
-            {System.show log(Id Type X Y)}
+            {System.show log(movedTo Id Type X Y)}
 
-            
-            % Create a NewState record with Adjoin/AdjoinAt function and return it
-            {GameController State}
+            % Broadcast to all agents
+            {Broadcast State.tracker movedTo(Id Type X Y)}
+
+            % Update tracker with new position
+            if {HasFeature State.tracker Id} then
+                UpdatedBot = {AdjoinAt State.tracker.Id 'x' X}
+                UpdatedBot2 = {AdjoinAt UpdatedBot 'y' Y}
+                NewTracker = {AdjoinAt State.tracker Id UpdatedBot2}
+            in
+                {GameController {AdjoinAt State 'tracker' NewTracker}}
+            else
+                {GameController State}
+            end
         end
     in
         % TODO: complete the interface and discard and report unknown messages
@@ -67,7 +85,7 @@ define
         {Handler Upcoming {Instance Msg}}
     end
 
-    % TODO: Spawn the agents
+    % Spawn the agents
     proc {StartGame}
         Stream
         Port = {NewPort Stream}
@@ -78,16 +96,34 @@ define
 
         % Spawn all bots from Input configuration
         Bots = Input.bots
-        for Bot in Bots do
-            case Bot of bot(Type _ X Y Orientation) then
-                {GUI spawnBot(Type X Y Orientation _)}
+        Tracker = tracker()
+        NewTracker
+
+        fun {SpawnBots BotList CurrentTracker}
+            case BotList of nil then CurrentTracker
+            [] Bot|Rest then
+                case Bot of bot(Type Name X Y Orientation) then
+                    % Spawn the visual representation
+                    BotId = {GUI spawnBot(Type X Y Orientation $)}
+                    % Spawn the agent logic with lowercase orientation
+                    LowerOri = {OrientationToLower Orientation}
+                    AgentPort = {AgentManager.spawnBot Type init(BotId Port Maze X Y LowerOri)}
+                    % Track the agent
+                    BotInfo = bot('id':BotId 'type':Type 'name':Name 'x':X 'y':Y 'port':AgentPort 'alive':true)
+                    UpdatedTracker = {AdjoinAt CurrentTracker BotId BotInfo}
+                in
+                    {SpawnBots Rest UpdatedTracker}
+                end
             end
         end
+
+        NewTracker = {SpawnBots Bots Tracker}
 
         Instance = {GameController state(
             'gui': GUI
             'maze': Maze
             'score': 0
+            'tracker': NewTracker
         )}
     in
         % TODO: log the winning team name and the score then use {Application.exit 0}
